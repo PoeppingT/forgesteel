@@ -39,8 +39,8 @@ export class Collections {
 		return collection[index];
 	};
 
-	static distinct = <T>(collection: T[], key: (item: T) => string) => {
-		const seen = new Set();
+	static distinct = <T, U>(collection: T[], key: (item: T) => U) => {
+		const seen = new Set<U>();
 		return collection.filter(item => {
 			const k = key(item);
 			return seen.has(k) ? false : seen.add(k);
@@ -87,5 +87,26 @@ export class Collections {
 		});
 
 		return item;
+	};
+
+	static move = <T>(collection: T[], index: number, direction: 'up' | 'down') => {
+		switch (direction) {
+			case 'up':
+				if ((index >= 1) && (index <= collection.length - 1)) {
+					const temp = collection[index - 1];
+					collection[index - 1] = collection[index];
+					collection[index] = temp;
+				}
+				break;
+			case 'down':
+				if ((index >= 0) && (index <= collection.length - 2)) {
+					const temp = collection[index + 1];
+					collection[index + 1] = collection[index];
+					collection[index] = temp;
+				}
+				break;
+		}
+
+		return collection;
 	};
 }

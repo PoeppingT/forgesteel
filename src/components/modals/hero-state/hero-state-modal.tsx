@@ -1,10 +1,12 @@
-import { Alert, Button, Divider, Flex, Tabs } from 'antd';
+import { Alert, Button, Divider, Flex, Space, Tabs } from 'antd';
 import { Condition, Hero } from '../../../models/hero';
 import { ConditionEndType, ConditionType } from '../../../enums/condition-type';
+import { ArrowUpOutlined } from '@ant-design/icons';
 import { Characteristic } from '../../../enums/characteristic';
-import { ConditionPanel } from '../../panels/condition-panel/condition-panel';
+import { ConditionPanel } from '../../panels/condition/condition-panel';
 import { DropdownButton } from '../../controls/dropdown-button/dropdown-button';
 import { HeroLogic } from '../../../logic/hero-logic';
+import { Modal } from '../modal/modal';
 import { NumberSpin } from '../../controls/number-spin/number-spin';
 import { Utils } from '../../../utils/utils';
 import { useState } from 'react';
@@ -15,15 +17,78 @@ interface Props {
 	hero: Hero;
 	startPage: 'hero' | 'stats' | 'conditions';
 	onChange: (hero: Hero) => void;
+	onLevelUp: () => void;
 }
 
 export const HeroStateModal = (props: Props) => {
 	const [ hero, setHero ] = useState<Hero>(JSON.parse(JSON.stringify(props.hero)));
 
-	const onChange = (field: string, value: number) => {
+	const setHeroicResource = (value: number) => {
 		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
-		const state = copy.state as unknown;
-		(state as { [field: string]: unknown })[field] = value;
+		copy.state.heroicResource = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setSurges = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.surges = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setVictories = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.victories = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setXP = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.xp = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setStaminaDamage = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.staminaDamage = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setRecoveriesUsed = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.recoveriesUsed = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setHeroTokens = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.heroTokens = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setRenown = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.renown = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setWealth = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.wealth = value;
+		setHero(copy);
+		props.onChange(copy);
+	};
+
+	const setProjectPoints = (value: number) => {
+		const copy = JSON.parse(JSON.stringify(hero)) as Hero;
+		copy.state.projectPoints = value;
 		setHero(copy);
 		props.onChange(copy);
 	};
@@ -92,25 +157,42 @@ export const HeroStateModal = (props: Props) => {
 
 	const getHeroSection = () => {
 		return (
-			<div>
+			<Space direction='vertical' style={{ width: '100%' }}>
 				<NumberSpin
 					label={hero.class ? hero.class.heroicResource : 'Heroic Resource'}
 					value={hero.state.heroicResource}
 					min={0}
-					onChange={value => onChange('heroicResource', value)}
+					onChange={setHeroicResource}
+				/>
+				<NumberSpin
+					label='Surges'
+					value={hero.state.surges}
+					min={0}
+					onChange={setSurges}
 				/>
 				<NumberSpin
 					label='Victories'
 					value={hero.state.victories}
 					min={0}
-					onChange={value => onChange('victories', value)}
+					onChange={setVictories}
 				/>
 				<NumberSpin
 					label='XP'
 					value={hero.state.xp}
 					min={0}
-					onChange={value => onChange('xp', value)}
+					onChange={setXP}
 				/>
+				{
+					HeroLogic.canLevelUp(hero) ?
+						<Alert
+							style={{ margin: '10px 0' }}
+							type='info'
+							showIcon={true}
+							message='You have enough XP to level up.'
+							action={<Button title='Level Up' type='text' icon={<ArrowUpOutlined />} onClick={props.onLevelUp} />}
+						/>
+						: null
+				}
 				<Flex align='center' justify='space-between' gap='5px'>
 					<Button
 						className='tall-button'
@@ -144,18 +226,23 @@ export const HeroStateModal = (props: Props) => {
 					label='Damage Taken'
 					value={hero.state.staminaDamage}
 					min={0}
-					onChange={value => onChange('staminaDamage', value)}
+					onChange={setStaminaDamage}
 				/>
 				<NumberSpin
 					label='Recoveries Used'
 					value={hero.state.recoveriesUsed}
 					min={0}
 					max={HeroLogic.getRecoveries(hero)}
-					onChange={value => onChange('recoveriesUsed', value)}
+					onChange={setRecoveriesUsed}
 				/>
 				{
 					hero.state.staminaDamage >= (HeroLogic.getStamina(hero) / 2) ?
-						<Alert style={{ margin: '10px 0' }} type='warning' showIcon={true} message='You are winded.' />
+						<Alert
+							style={{ margin: '10px 0' }}
+							type='warning'
+							showIcon={true}
+							message='You are winded.'
+						/>
 						: null
 				}
 				<Flex align='center' justify='space-between' gap='5px'>
@@ -187,33 +274,39 @@ export const HeroStateModal = (props: Props) => {
 						</div>
 					</Button>
 				</Flex>
-			</div>
+			</Space>
 		);
 	};
 
 	const getStatisticsSection = () => {
 		return (
-			<div>
+			<Space direction='vertical' style={{ width: '100%' }}>
 				<NumberSpin
 					label='Hero Tokens'
 					value={hero.state.heroTokens}
 					min={0}
-					onChange={value => onChange('heroTokens', value)}
+					onChange={setHeroTokens}
 				/>
 				<NumberSpin
 					label='Renown'
 					value={hero.state.renown}
 					min={0}
-					onChange={value => onChange('renown', value)}
+					onChange={setRenown}
+				/>
+				<NumberSpin
+					label='Wealth'
+					value={hero.state.wealth}
+					min={1}
+					onChange={setWealth}
 				/>
 				<NumberSpin
 					label='Project Points'
 					value={hero.state.projectPoints}
 					min={0}
-					step={5}
-					onChange={value => onChange('projectPoints', value)}
+					steps={[ 5 ]}
+					onChange={setProjectPoints}
 				/>
-			</div>
+			</Space>
 		);
 	};
 
@@ -251,28 +344,32 @@ export const HeroStateModal = (props: Props) => {
 
 	try {
 		return (
-			<div className='hero-state-modal'>
-				<Tabs
-					items={[
-						{
-							key: 'hero',
-							label: 'Hero',
-							children: getHeroSection()
-						},
-						{
-							key: 'stats',
-							label: 'Statistics',
-							children: getStatisticsSection()
-						},
-						{
-							key: 'conditions',
-							label: 'Conditions',
-							children: getConditionsSection()
-						}
-					]}
-					defaultActiveKey={props.startPage}
-				/>
-			</div>
+			<Modal
+				content={
+					<div className='hero-state-modal'>
+						<Tabs
+							items={[
+								{
+									key: 'hero',
+									label: 'Hero',
+									children: getHeroSection()
+								},
+								{
+									key: 'stats',
+									label: 'Statistics',
+									children: getStatisticsSection()
+								},
+								{
+									key: 'conditions',
+									label: 'Conditions',
+									children: getConditionsSection()
+								}
+							]}
+							defaultActiveKey={props.startPage}
+						/>
+					</div>
+				}
+			/>
 		);
 	} catch (ex) {
 		console.error(ex);

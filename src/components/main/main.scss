@@ -11,23 +11,26 @@
 	}
 
 	.main-footer {
-		flex: 0 0 auto;
-		padding: 10px 20px;
+		flex: 0 0 50px;
+		padding: 0 10px;
 		background-color: rgb(200, 200, 200);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 20px;
+		gap: 15px;
 		font-size: 10px;
 
 		.main-footer-section {
 			display: flex;
 			align-items: center;
-			gap: 10px;
 
 			.ds-logo {
 				height: 30px;
-				//background-color: rgb(255, 255, 255);
+				border-radius: 5px;
+			}
+
+			&.navigation-buttons {
+				background-color: rgb(220, 220, 220);
 				border-radius: 5px;
 			}
 		}
@@ -41,7 +44,7 @@
 
 			.main-footer-section {
 				.ds-logo {
-					background-color: rgb(255, 255, 255);
+					background-color: rgb(220, 220, 220);
 				}
 			}
 		}

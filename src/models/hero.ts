@@ -4,7 +4,9 @@ import { Career } from './career';
 import { Characteristic } from '../enums/characteristic';
 import { Complication } from './complication';
 import { Culture } from './culture';
+import { Feature } from './feature';
 import { HeroClass } from './class';
+import { Item } from './item';
 
 export interface Condition {
 	id: string;
@@ -16,13 +18,16 @@ export interface Condition {
 export interface HeroState {
 	staminaDamage: number;
 	recoveriesUsed: number;
+	surges: number;
 	victories: number;
 	xp:number;
 	heroicResource: number;
 	heroTokens: number;
 	renown: number;
+	wealth: number;
 	projectPoints: number;
 	conditions: Condition[];
+	inventory: Item[];
 }
 
 export interface Hero {
@@ -37,5 +42,6 @@ export interface Hero {
 	career: Career | null;
 	complication: Complication | null;
 
+	features: Feature[];
 	state: HeroState;
 }

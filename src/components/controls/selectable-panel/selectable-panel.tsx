@@ -1,11 +1,11 @@
+import { CSSProperties, ReactNode } from 'react';
 import { Button } from 'antd';
-import { ReactNode } from 'react';
 
 import './selectable-panel.scss';
 
 interface Props {
 	children: ReactNode;
-	disabled?: boolean;
+	style?: CSSProperties;
 	onSelect?: () => void;
 	onUnselect?: () => void;
 };
@@ -13,15 +13,12 @@ interface Props {
 export const SelectablePanel = (props: Props) => {
 	try {
 		let className = 'selectable-panel';
-		if (props.disabled) {
-			className += ' disabled';
-		}
 		if (props.onSelect) {
 			className += ' selectable';
 		}
 
 		return (
-			<div className={className} onClick={props.onSelect}>
+			<div className={className} style={props.style} onClick={props.onSelect}>
 				{props.children}
 				{props.onUnselect ? <Button className='unselect-button' onClick={props.onUnselect}>Unselect</Button> : null}
 			</div>

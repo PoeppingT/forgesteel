@@ -1,7 +1,6 @@
 import { Space, Tabs } from 'antd';
-import { AbilityPanel } from '../../panels/ability-panel/ability-panel';
+import { AbilityPanel } from '../../panels/elements/ability-panel/ability-panel';
 import { AbilityUsage } from '../../../enums/ability-usage';
-import { CampaignSetting } from '../../../models/campaign-setting';
 import { Collections } from '../../../utils/collections';
 import { ConditionLogic } from '../../../logic/condition-logic';
 import { ConditionType } from '../../../enums/condition-type';
@@ -9,17 +8,19 @@ import { Field } from '../../controls/field/field';
 import { HeaderText } from '../../controls/header-text/header-text';
 import { Hero } from '../../../models/hero';
 import { HeroLogic } from '../../../logic/hero-logic';
-import { LanguageData } from '../../../data/language-data';
+import { Modal } from '../modal/modal';
 import { PanelMode } from '../../../enums/panel-mode';
-import { SkillData } from '../../../data/skill-data';
+import { SelectablePanel } from '../../controls/selectable-panel/selectable-panel';
 import { SkillList } from '../../../enums/skill-list';
+import { Sourcebook } from '../../../models/sourcebook';
+import { SourcebookLogic } from '../../../logic/sourcebook-logic';
 import { Utils } from '../../../utils/utils';
 
 import './rules-modal.scss';
 
 interface Props {
 	hero: Hero;
-	settings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 }
 
 export const RulesModal = (props: Props) => {
@@ -41,7 +42,7 @@ export const RulesModal = (props: Props) => {
 						].map(ct => (
 							<div key={ct}>
 								<HeaderText>{ct}</HeaderText>
-								<div className='ds-text description-text' dangerouslySetInnerHTML={{ __html: Utils.showdownConverter.makeHtml(ConditionLogic.getDescription(ct)) }} />
+								<div dangerouslySetInnerHTML={{ __html: Utils.showdownConverter.makeHtml(ConditionLogic.getDescription(ct)) }} />
 							</div>
 						))
 					}
@@ -50,7 +51,7 @@ export const RulesModal = (props: Props) => {
 		};
 
 		const getSkillsSection = () => {
-			const settings = props.hero.settingIDs.map(id => props.settings.find(s => s.id === id)).filter(s => !!s);
+			const sourcebooks = props.hero.settingIDs.map(id => props.sourcebooks.find(s => s.id === id)).filter(s => !!s);
 
 			return (
 				<div>
@@ -65,7 +66,7 @@ export const RulesModal = (props: Props) => {
 							<div key={sl}>
 								<HeaderText>{sl}</HeaderText>
 								{
-									SkillData.getSkills(settings)
+									SourcebookLogic.getSkills(sourcebooks)
 										.filter(s => s.list === sl)
 										.map(s => (
 											<Field key={s.name} label={s.name} value={s.description} />
@@ -78,33 +79,9 @@ export const RulesModal = (props: Props) => {
 			);
 		};
 
-		const getActionsSection = () => {
-			return (
-				<Space direction='vertical'>
-					{
-						HeroLogic.getAbilities(props.hero, false, true, true)
-							.filter(a => a.type.usage === AbilityUsage.Action)
-							.map(a => <AbilityPanel key={a.id} ability={a} hero={props.hero} mode={PanelMode.Full} />)
-					}
-				</Space>
-			);
-		};
-
-		const getManeuversSection = () => {
-			return (
-				<Space direction='vertical'>
-					{
-						HeroLogic.getAbilities(props.hero, false, true, true)
-							.filter(a => a.type.usage === AbilityUsage.Maneuver)
-							.map(a => <AbilityPanel key={a.id} ability={a} hero={props.hero} mode={PanelMode.Full} />)
-					}
-				</Space>
-			);
-		};
-
 		const getLanguagesSection = () => {
-			const settings = props.hero.settingIDs.map(id => props.settings.find(s => s.id === id)).filter(s => !!s);
-			const languages = LanguageData.getLanguages(settings);
+			const sourcebooks = props.hero.settingIDs.map(id => props.sourcebooks.find(s => s.id === id)).filter(s => !!s);
+			const languages = SourcebookLogic.getLanguages(sourcebooks);
 
 			return (
 				<div>
@@ -113,38 +90,64 @@ export const RulesModal = (props: Props) => {
 			);
 		};
 
+		const getAbilitiesSection = () => {
+			const abilities = HeroLogic.getAbilities(props.hero, false, true, true);
+
+			return (
+				<Space direction='vertical'>
+					<HeaderText>Actions</HeaderText>
+					{
+						abilities
+							.filter(a => a.type.usage === AbilityUsage.Action)
+							.map(a => <SelectablePanel key={a.id}><AbilityPanel ability={a} hero={props.hero} mode={PanelMode.Full} /></SelectablePanel>)
+					}
+					<HeaderText>Maneuvers</HeaderText>
+					{
+						abilities
+							.filter(a => a.type.usage === AbilityUsage.Maneuver)
+							.map(a => <SelectablePanel key={a.id}><AbilityPanel ability={a} hero={props.hero} mode={PanelMode.Full} /></SelectablePanel>)
+					}
+					<HeaderText>Move Actions</HeaderText>
+					{
+						abilities
+							.filter(a => a.type.usage === AbilityUsage.Move)
+							.map(a => <SelectablePanel key={a.id}><AbilityPanel ability={a} hero={props.hero} mode={PanelMode.Full} /></SelectablePanel>)
+					}
+				</Space>
+			);
+		};
+
 		return (
-			<div className='rules-modal'>
-				<Tabs
-					items={[
-						{
-							key: '1',
-							label: 'Conditions',
-							children: getConditionsSection()
-						},
-						{
-							key: '2',
-							label: 'Skills',
-							children: getSkillsSection()
-						},
-						{
-							key: '3',
-							label: 'Actions',
-							children: getActionsSection()
-						},
-						{
-							key: '4',
-							label: 'Maneuvers',
-							children: getManeuversSection()
-						},
-						{
-							key: '5',
-							label: 'Languages',
-							children: getLanguagesSection()
-						}
-					]}
-				/>
-			</div>
+			<Modal
+				content={
+					<div className='rules-modal'>
+						<Tabs
+							items={[
+								{
+									key: '1',
+									label: 'Conditions',
+									children: getConditionsSection()
+								},
+								{
+									key: '2',
+									label: 'Skills',
+									children: getSkillsSection()
+								},
+								{
+									key: '3',
+									label: 'Languages',
+									children: getLanguagesSection()
+								},
+								{
+									key: '4',
+									label: 'Abilities',
+									children: getAbilitiesSection()
+								}
+							]}
+						/>
+					</div>
+				}
+			/>
 		);
 	} catch (ex) {
 		console.error(ex);

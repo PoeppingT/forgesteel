@@ -1,48 +1,39 @@
 import { Button, Divider, Input, Radio, Segmented, Select, Space } from 'antd';
 import { CultureData, EnvironmentData, OrganizationData, UpbringingData } from '../../../../data/culture-data';
-import { Feature, FeatureBonusData, FeatureData, FeatureLanguageData, FeatureSkillData } from '../../../../models/feature';
-import { ReactNode, useState } from 'react';
+import { Feature, FeatureBonusData, FeatureData } from '../../../../models/feature';
+import { ReactNode, useMemo, useState } from 'react';
 import { Ancestry } from '../../../../models/ancestry';
-import { AncestryData } from '../../../../data/ancestry-data';
-import { AncestryPanel } from '../../../panels/ancestry-panel/ancestry-panel';
+import { AncestryPanel } from '../../../panels/elements/ancestry-panel/ancestry-panel';
 import { AppHeader } from '../../../panels/app-header/app-header';
-import { CampaignSetting } from '../../../../models/campaign-setting';
 import { Career } from '../../../../models/career';
-import { CareerData } from '../../../../data/career-data';
-import { CareerPanel } from '../../../panels/career-panel/career-panel';
+import { CareerPanel } from '../../../panels/elements/career-panel/career-panel';
 import { Characteristic } from '../../../../enums/characteristic';
-import { ClassData } from '../../../../data/class-data';
-import { ClassPanel } from '../../../panels/class-panel/class-panel';
+import { ClassPanel } from '../../../panels/elements/class-panel/class-panel';
 import { Complication } from '../../../../models/complication';
-import { ComplicationData } from '../../../../data/complication-data';
-import { ComplicationPanel } from '../../../panels/complication-panel/complication-panel';
+import { ComplicationPanel } from '../../../panels/elements/complication-panel/complication-panel';
 import { Culture } from '../../../../models/culture';
-import { CulturePanel } from '../../../panels/culture-panel/culture-panel';
+import { CulturePanel } from '../../../panels/elements/culture-panel/culture-panel';
 import { FeatureField } from '../../../../enums/feature-field';
 import { FeatureLogic } from '../../../../logic/feature-logic';
-import { FeaturePanel } from '../../../panels/feature-panel/feature-panel';
+import { FeaturePanel } from '../../../panels/elements/feature-panel/feature-panel';
 import { FeatureType } from '../../../../enums/feature-type';
 import { Field } from '../../../controls/field/field';
+import { Format } from '../../../../utils/format';
 import { HeaderText } from '../../../controls/header-text/header-text';
 import { Hero } from '../../../../models/hero';
 import { HeroClass } from '../../../../models/class';
 import { HeroLogic } from '../../../../logic/hero-logic';
-import { LanguageData } from '../../../../data/language-data';
 import { NameGenerator } from '../../../../utils/name-generator';
+import { NumberSpin } from '../../../controls/number-spin/number-spin';
 import { PanelMode } from '../../../../enums/panel-mode';
 import { SelectablePanel } from '../../../controls/selectable-panel/selectable-panel';
+import { Sourcebook } from '../../../../models/sourcebook';
+import { SourcebookLogic } from '../../../../logic/sourcebook-logic';
 import { ThunderboltOutlined } from '@ant-design/icons';
+import { useNavigation } from '../../../../hooks/use-navigation';
+import { useParams } from 'react-router';
 
 import './hero-edit-page.scss';
-
-enum Page {
-	Ancestry = 'Ancestry',
-	Culture = 'Culture',
-	Career = 'Career',
-	Class = 'Class',
-	Complication = 'Complication',
-	Details = 'Details'
-}
 
 enum PageState {
 	Optional = 'Optional',
@@ -52,30 +43,38 @@ enum PageState {
 }
 
 interface Props {
-	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	heroes: Hero[];
+	sourcebooks: Sourcebook[];
 	goHome: () => void;
 	showAbout: () => void;
 	saveChanges: (hero: Hero) => void;
-	cancelChanges: () => void;
+	cancelChanges: (heroId: string) => void;
 }
 
-export const HeroEditPage = (props: Props) => {
-	const [ page, setPage ] = useState<Page>(Page.Ancestry);
-	const [ hero, setHero ] = useState<Hero>(JSON.parse(JSON.stringify(props.hero)) as Hero);
+type HeroTab = 'ancestry' | 'culture' | 'career' | 'class' | 'complication' | 'details';
+
+
+export const HeroEditPage = ({ cancelChanges, ...props }: Props) => {
+	const navigation = useNavigation();
+	const { heroId, tab } = useParams<{ heroId: string; tab: HeroTab }>();
+	const setTabKey = (tabKey: HeroTab) => {
+		navigation.goToHeroEdit(heroId!, tabKey);
+	};
+	const [ page, setPage ] = [ tab, setTabKey ];
+	const originalHero = useMemo(() => props.heroes.find(h => h.id === heroId)!, [ heroId, props.heroes ]);
+	const [ hero, setHero ] = useState<Hero>(JSON.parse(JSON.stringify(originalHero)) as Hero);
 	const [ dirty, setDirty ] = useState<boolean>(false);
 
 	try {
-		const getPageState = (page: Page) => {
+		const getPageState = (page: HeroTab) => {
 			switch (page) {
-				case Page.Ancestry:
+				case 'ancestry':
 					if (hero.ancestry) {
-						const features = hero.ancestry.features;
-						return (features.filter(f => FeatureLogic.isChoice(f)).filter(f => !FeatureLogic.isChosen(f)).length > 0) ? PageState.InProgress : PageState.Completed;
+						return (hero.ancestry.features.filter(f => FeatureLogic.isChoice(f)).filter(f => !FeatureLogic.isChosen(f)).length > 0) ? PageState.InProgress : PageState.Completed;
 					} else {
 						return PageState.NotStarted;
 					}
-				case Page.Culture:
+				case 'culture':
 					if (hero.culture) {
 						if (hero.culture.languages.length === 0) {
 							return PageState.InProgress;
@@ -97,14 +96,13 @@ export const HeroEditPage = (props: Props) => {
 					} else {
 						return PageState.NotStarted;
 					}
-				case Page.Career:
+				case 'career':
 					if (hero.career) {
-						const features = hero.career.features;
-						return (features.filter(f => FeatureLogic.isChoice(f)).filter(f => !FeatureLogic.isChosen(f)).length > 0) ? PageState.InProgress : PageState.Completed;
+						return (hero.career.features.filter(f => FeatureLogic.isChoice(f)).filter(f => !FeatureLogic.isChosen(f)).length > 0) ? PageState.InProgress : PageState.Completed;
 					} else {
 						return PageState.NotStarted;
 					}
-				case Page.Class:
+				case 'class':
 					if (hero.class) {
 						if (hero.class.characteristics.every(ch => ch.value === 0)) {
 							return PageState.InProgress;
@@ -128,14 +126,13 @@ export const HeroEditPage = (props: Props) => {
 					} else {
 						return PageState.NotStarted;
 					}
-				case Page.Complication:
+				case 'complication':
 					if (hero.complication) {
-						const features = hero.complication.features;
-						return (features.filter(f => FeatureLogic.isChoice(f)).filter(f => !FeatureLogic.isChosen(f)).length > 0) ? PageState.InProgress : PageState.Completed;
+						return (hero.complication.features.filter(f => FeatureLogic.isChoice(f)).filter(f => !FeatureLogic.isChosen(f)).length > 0) ? PageState.InProgress : PageState.Completed;
 					} else {
 						return PageState.Optional;
 					}
-				case Page.Details:
+				case 'details':
 					if (hero.name) {
 						return PageState.Completed;
 					} else {
@@ -221,6 +218,7 @@ export const HeroEditPage = (props: Props) => {
 			if (careerCopy) {
 				heroCopy.state.projectPoints = 0;
 				heroCopy.state.renown = 0;
+				heroCopy.state.wealth = 1;
 				careerCopy.features.filter(f => f.type === FeatureType.Bonus).map(f => {
 					const data = f.data as FeatureBonusData;
 					switch (data.field) {
@@ -229,6 +227,9 @@ export const HeroEditPage = (props: Props) => {
 							break;
 						case FeatureField.Renown:
 							heroCopy.state.renown += data.value;
+							break;
+						case FeatureField.Wealth:
+							heroCopy.state.wealth += data.value;
 							break;
 					}
 				});
@@ -250,6 +251,16 @@ export const HeroEditPage = (props: Props) => {
 			const classCopy = JSON.parse(JSON.stringify(heroClass)) as HeroClass | null;
 			const heroCopy = JSON.parse(JSON.stringify(hero)) as Hero;
 			heroCopy.class = classCopy;
+			setHero(heroCopy);
+			setDirty(true);
+		};
+
+		const setLevel = (level: number) => {
+			const heroCopy = JSON.parse(JSON.stringify(hero)) as Hero;
+			if (heroCopy.class) {
+				heroCopy.class.level = level;
+				heroCopy.state.xp = HeroLogic.getMinXP(level);
+			}
 			setHero(heroCopy);
 			setDirty(true);
 		};
@@ -284,7 +295,7 @@ export const HeroEditPage = (props: Props) => {
 			const heroCopy = JSON.parse(JSON.stringify(hero)) as Hero;
 			const feature = HeroLogic.getFeatures(heroCopy).find(f => f.id === featureID);
 			if (feature) {
-				feature.data = data as FeatureSkillData | FeatureLanguageData;
+				feature.data = data;
 			}
 			setHero(heroCopy);
 			setDirty(true);
@@ -309,26 +320,22 @@ export const HeroEditPage = (props: Props) => {
 			setDirty(false);
 		};
 
-		const cancelChanges = () => {
-			props.cancelChanges();
-		};
-
 		const getContent = () => {
 			switch (page) {
-				case Page.Ancestry:
+				case 'ancestry':
 					return (
 						<AncestrySection
 							hero={hero}
-							campaignSettings={props.campaignSettings.filter(cs => hero.settingIDs.includes(cs.id))}
+							sourcebooks={props.sourcebooks.filter(cs => hero.settingIDs.includes(cs.id))}
 							selectAncestry={setAncestry}
 							setFeatureData={setFeatureData}
 						/>
 					);
-				case Page.Culture:
+				case 'culture':
 					return (
 						<CultureSection
 							hero={hero}
-							campaignSettings={props.campaignSettings.filter(cs => hero.settingIDs.includes(cs.id))}
+							sourcebooks={props.sourcebooks.filter(cs => hero.settingIDs.includes(cs.id))}
 							selectCulture={setCulture}
 							selectLanguages={setLanguages}
 							selectEnvironment={setEnvironment}
@@ -337,43 +344,45 @@ export const HeroEditPage = (props: Props) => {
 							setFeatureData={setFeatureData}
 						/>
 					);
-				case Page.Career:
+				case 'career':
 					return (
 						<CareerSection
 							hero={hero}
-							campaignSettings={props.campaignSettings.filter(cs => hero.settingIDs.includes(cs.id))}
+							sourcebooks={props.sourcebooks.filter(cs => hero.settingIDs.includes(cs.id))}
 							selectCareer={setCareer}
 							selectIncitingIncident={setIncitingIncident}
 							setFeatureData={setFeatureData}
 						/>
 					);
-				case Page.Class:
+				case 'class':
 					return (
 						<ClassSection
 							hero={hero}
-							campaignSettings={props.campaignSettings.filter(cs => hero.settingIDs.includes(cs.id))}
+							sourcebooks={props.sourcebooks.filter(cs => hero.settingIDs.includes(cs.id))}
 							selectClass={setClass}
+							setLevel={setLevel}
 							selectCharacteristics={setCharacteristics}
 							selectSubclasses={setSubclasses}
 							setFeatureData={setFeatureData}
 						/>
 					);
-				case Page.Complication:
+				case 'complication':
 					return (
 						<ComplicationSection
 							hero={hero}
-							campaignSettings={props.campaignSettings.filter(cs => hero.settingIDs.includes(cs.id))}
+							sourcebooks={props.sourcebooks.filter(cs => hero.settingIDs.includes(cs.id))}
 							selectComplication={setComplication}
 							setFeatureData={setFeatureData}
 						/>
 					);
-				case Page.Details:
+				case 'details':
 					return (
 						<DetailsSection
 							hero={hero}
-							campaignSettings={props.campaignSettings}
+							sourcebooks={props.sourcebooks}
 							setName={setName}
 							setSettingIDs={setSettingIDs}
+							setFeatureData={setFeatureData}
 						/>
 					);
 			}
@@ -381,33 +390,32 @@ export const HeroEditPage = (props: Props) => {
 
 		return (
 			<div className='hero-edit-page'>
-				<AppHeader goHome={props.goHome} showAbout={props.showAbout}>
+				<AppHeader subtitle='Heroes' goHome={props.goHome} showAbout={props.showAbout}>
 					<Button type='primary' disabled={!dirty} onClick={saveChanges}>
 						Save Changes
 					</Button>
-					<Button onClick={cancelChanges}>
+					<Button onClick={() => cancelChanges(heroId!)}>
 						Cancel
 					</Button>
 				</AppHeader>
 				<div className='hero-edit-page-content'>
 					<div className='page-selector'>
-						<Segmented<Page>
-							options={[
-								Page.Ancestry,
-								Page.Culture,
-								Page.Career,
-								Page.Class,
-								Page.Complication,
-								Page.Details
-							].map(page => ({
-								value: page,
+						<Segmented<HeroTab>
+							options={([
+								'ancestry',
+								'culture',
+								'career',
+								'class',
+								'complication',
+								'details'
+							] as const).map(tab => ({
+								value: tab,
 								label: (
-									<div className={`page-button ${getPageState(page).toLowerCase().replace(' ', '-')}`}>
-										<div className='page-button-title'>{page}</div>
-										<div className='page-button-subtitle'>{getPageState(page)}</div>
+									<div className={`page-button ${getPageState(tab).toLowerCase().replace(' ', '-')}`}>
+										<div className='page-button-title'>{Format.capitalize(tab, '-')}</div>
+										<div className='page-button-subtitle'>{getPageState(tab)}</div>
 									</div>
-								),
-								title: page
+								)
 							}))}
 							block={true}
 							value={page}
@@ -426,14 +434,14 @@ export const HeroEditPage = (props: Props) => {
 
 interface AncestrySectionProps {
 	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	selectAncestry: (ancestry: Ancestry | null) => void;
 	setFeatureData: (featureID: string, data: FeatureData) => void;
 }
 
 const AncestrySection = (props: AncestrySectionProps) => {
 	try {
-		const ancestries = AncestryData.getAncestries(props.campaignSettings);
+		const ancestries = SourcebookLogic.getAncestries(props.sourcebooks);
 		const options = ancestries.map(a => (
 			<SelectablePanel key={a.id} onSelect={() => props.selectAncestry(a)}>
 				<AncestryPanel ancestry={a} />
@@ -446,7 +454,7 @@ const AncestrySection = (props: AncestrySectionProps) => {
 				.filter(f => FeatureLogic.isChoice(f))
 				.map(f => (
 					<SelectablePanel key={f.id}>
-						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} campaignSettings={props.campaignSettings} setData={props.setFeatureData} />
+						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} sourcebooks={props.sourcebooks} setData={props.setFeatureData} />
 					</SelectablePanel>
 				));
 		}
@@ -486,7 +494,7 @@ const AncestrySection = (props: AncestrySectionProps) => {
 
 interface CultureSectionProps {
 	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	selectCulture: (culture: Culture | null) => void;
 	selectLanguages: (languages: string[]) => void;
 	selectEnvironment: (id: string | null) => void;
@@ -497,7 +505,7 @@ interface CultureSectionProps {
 
 const CultureSection = (props: CultureSectionProps) => {
 	try {
-		const cultures = CultureData.getCultures(props.campaignSettings);
+		const cultures = SourcebookLogic.getCultures(props.sourcebooks);
 		cultures.unshift(CultureData.bespoke);
 		const options = cultures.map(c => (
 			<SelectablePanel key={c.id} onSelect={() => props.selectCulture(c)}>
@@ -511,27 +519,14 @@ const CultureSection = (props: CultureSectionProps) => {
 				.filter(f => FeatureLogic.isChoice(f))
 				.map(f => (
 					<SelectablePanel key={f.id}>
-						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} campaignSettings={props.campaignSettings} setData={props.setFeatureData} />
+						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} sourcebooks={props.sourcebooks} setData={props.setFeatureData} />
 					</SelectablePanel>
 				));
 
 			if (props.hero.culture.id === CultureData.bespoke.id) {
-				const languages = LanguageData.getLanguages(props.campaignSettings);
-
 				choices.unshift(
 					<SelectablePanel key='bespoke'>
 						<HeaderText>Bespoke Culture</HeaderText>
-						<div className='ds-text'>Choose your language.</div>
-						<Select
-							style={{ width: '100%' }}
-							className={props.hero.culture.languages.length === 0 ? 'selection-empty' : ''}
-							allowClear={true}
-							placeholder='Select'
-							options={languages.map(l => ({ label: l.name, value: l.name, desc: l.description }))}
-							optionRender={option => <Field label={option.data.label} value={option.data.desc} />}
-							value={props.hero.culture.languages.length > 0 ? props.hero.culture.languages[0] : null}
-							onChange={value => props.selectLanguages(value ? [ value ] : [])}
-						/>
 						<div className='ds-text'>Choose your Environment, Organization, and Upbringing.</div>
 						<Space direction='vertical' style={{ width: '100%' }}>
 							<Select
@@ -567,8 +562,24 @@ const CultureSection = (props: CultureSectionProps) => {
 						</Space>
 					</SelectablePanel>
 				);
-
 			}
+
+			choices.unshift(
+				<SelectablePanel key='language'>
+					<HeaderText>Language</HeaderText>
+					<div className='ds-text'>Choose your language.</div>
+					<Select
+						style={{ width: '100%' }}
+						className={props.hero.culture.languages.length === 0 ? 'selection-empty' : ''}
+						allowClear={true}
+						placeholder='Select'
+						options={SourcebookLogic.getLanguages(props.sourcebooks).map(l => ({ label: l.name, value: l.name, desc: l.description }))}
+						optionRender={option => <Field label={option.data.label} value={option.data.desc} />}
+						value={props.hero.culture.languages.length > 0 ? props.hero.culture.languages[0] : null}
+						onChange={value => props.selectLanguages(value ? [ value ] : [])}
+					/>
+				</SelectablePanel>
+			);
 		}
 
 		return (
@@ -606,7 +617,7 @@ const CultureSection = (props: CultureSectionProps) => {
 
 interface CareerSectionProps {
 	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	selectCareer: (career: Career | null) => void;
 	selectIncitingIncident: (id: string | null) => void;
 	setFeatureData: (featureID: string, data: FeatureData) => void;
@@ -614,7 +625,7 @@ interface CareerSectionProps {
 
 const CareerSection = (props: CareerSectionProps) => {
 	try {
-		const careers = CareerData.getCareers(props.campaignSettings);
+		const careers = SourcebookLogic.getCareers(props.sourcebooks);
 		const options = careers.map(c => (
 			<SelectablePanel key={c.id} onSelect={() => props.selectCareer(c)}>
 				<CareerPanel career={c} />
@@ -627,7 +638,7 @@ const CareerSection = (props: CareerSectionProps) => {
 				.filter(f => FeatureLogic.isChoice(f))
 				.map(f => (
 					<SelectablePanel key={f.id}>
-						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} campaignSettings={props.campaignSettings} setData={props.setFeatureData} />
+						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} sourcebooks={props.sourcebooks} setData={props.setFeatureData} />
 					</SelectablePanel>
 				));
 
@@ -684,8 +695,9 @@ const CareerSection = (props: CareerSectionProps) => {
 
 interface ClassSectionProps {
 	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	selectClass: (heroClass: HeroClass | null) => void;
+	setLevel: (level: number) => void;
 	selectCharacteristics: (array: { characteristic: Characteristic, value: number }[]) => void;
 	selectSubclasses: (subclassIDs: string[]) => void;
 	setFeatureData: (featureID: string, data: FeatureData) => void;
@@ -693,7 +705,7 @@ interface ClassSectionProps {
 
 const ClassSection = (props: ClassSectionProps) => {
 	try {
-		const classes = ClassData.getClasses(props.campaignSettings);
+		const classes = SourcebookLogic.getClasses(props.sourcebooks);
 		const options = classes.map(c => (
 			<SelectablePanel key={c.id} onSelect={() => props.selectClass(c)}>
 				<ClassPanel heroClass={c} />
@@ -706,7 +718,7 @@ const ClassSection = (props: ClassSectionProps) => {
 				.filter(f => FeatureLogic.isChoice(f))
 				.map(f => (
 					<SelectablePanel key={f.id}>
-						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} campaignSettings={props.campaignSettings} setData={props.setFeatureData} />
+						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} sourcebooks={props.sourcebooks} setData={props.setFeatureData} />
 					</SelectablePanel>
 				));
 
@@ -765,6 +777,19 @@ const ClassSection = (props: ClassSectionProps) => {
 					</Radio.Group>
 				</SelectablePanel>
 			);
+
+			choices.unshift(
+				<SelectablePanel key='class-level'>
+					<HeaderText>Level</HeaderText>
+					<NumberSpin
+						value={props.hero.class.level}
+						min={1}
+						max={props.hero.class.featuresByLevel.length}
+						onChange={value => props.setLevel(value)}
+					/>
+					<Field label='XP' value={props.hero.state.xp} />
+				</SelectablePanel>
+			);
 		}
 
 		return (
@@ -802,14 +827,14 @@ const ClassSection = (props: ClassSectionProps) => {
 
 interface ComplicationSectionProps {
 	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	selectComplication: (complication: Complication | null) => void;
 	setFeatureData: (featureID: string, data: FeatureData) => void;
 }
 
 const ComplicationSection = (props: ComplicationSectionProps) => {
 	try {
-		const complications = ComplicationData.getComplications(props.campaignSettings);
+		const complications = SourcebookLogic.getComplications(props.sourcebooks);
 		const options = complications.map(c => (
 			<SelectablePanel key={c.id} onSelect={() => props.selectComplication(c)}>
 				<ComplicationPanel complication={c} />
@@ -822,7 +847,7 @@ const ComplicationSection = (props: ComplicationSectionProps) => {
 				.filter(f => FeatureLogic.isChoice(f))
 				.map(f => (
 					<SelectablePanel key={f.id}>
-						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} campaignSettings={props.campaignSettings} setData={props.setFeatureData} />
+						<FeaturePanel feature={f} mode={PanelMode.Full} hero={props.hero} sourcebooks={props.sourcebooks} setData={props.setFeatureData} />
 					</SelectablePanel>
 				));
 		}
@@ -862,24 +887,14 @@ const ComplicationSection = (props: ComplicationSectionProps) => {
 
 interface DetailsSectionProps {
 	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	setName: (value: string) => void;
 	setSettingIDs: (settingIDs: string[]) => void;
+	setFeatureData: (featureID: string, data: FeatureData) => void;
 }
 
 const DetailsSection = (props: DetailsSectionProps) => {
 	try {
-		const getSetting = (settingID: string) => {
-			const setting = props.campaignSettings.find(cs => cs.id === settingID);
-			if (setting) {
-				return (
-					<Field key={setting.id} label={setting.name || 'Unnamed Collection'} value={setting.defaultLanguages.join(', ') || 'None'} />
-				);
-			}
-
-			return null;
-		};
-
 		return (
 			<div className='hero-edit-content'>
 				<div className='hero-edit-content-column' id='details-main'>
@@ -894,19 +909,29 @@ const DetailsSection = (props: DetailsSectionProps) => {
 						onChange={e => props.setName(e.target.value)}
 					/>
 					<Divider />
-					<HeaderText>Collections</HeaderText>
+					<HeaderText>Sourcebooks</HeaderText>
 					<Select
 						style={{ width: '100%' }}
 						placeholder='Select'
 						mode='multiple'
-						options={props.campaignSettings.map(cs => ({ value: cs.id, label: cs.name }))}
-						optionRender={option => <div className='ds-text'>{option.data.label || 'Unnamed Collection'}</div>}
+						options={props.sourcebooks.map(cs => ({ value: cs.id, label: cs.name || 'Unnamed Collection' }))}
+						optionRender={option => <div className='ds-text'>{option.data.label}</div>}
 						value={props.hero.settingIDs}
 						onChange={props.setSettingIDs}
 					/>
 					<Divider />
-					<HeaderText>Default Languages</HeaderText>
-					{props.hero.settingIDs.map(getSetting)}
+					{
+						props.hero.features.map(f => (
+							<FeaturePanel
+								key={f.id}
+								feature={f}
+								hero={props.hero}
+								sourcebooks={props.sourcebooks}
+								mode={PanelMode.Full}
+								setData={props.setFeatureData}
+							/>
+						))
+					}
 				</div>
 			</div>
 		);

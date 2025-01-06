@@ -1,36 +1,39 @@
 import { Button, Divider, Popover } from 'antd';
-import { DeleteOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
+import { DownOutlined, EditOutlined } from '@ant-design/icons';
 import { Ability } from '../../../../models/ability';
 import { Ancestry } from '../../../../models/ancestry';
 import { AppHeader } from '../../../panels/app-header/app-header';
-import { CampaignSetting } from '../../../../models/campaign-setting';
 import { Career } from '../../../../models/career';
 import { Characteristic } from '../../../../enums/characteristic';
 import { Complication } from '../../../../models/complication';
 import { Culture } from '../../../../models/culture';
+import { DangerButton } from '../../../controls/danger-button/danger-button';
 import { Domain } from '../../../../models/domain';
 import { DropdownButton } from '../../../controls/dropdown-button/dropdown-button';
 import { Hero } from '../../../../models/hero';
 import { HeroClass } from '../../../../models/class';
-import { HeroPanel } from '../../../panels/hero-panel/hero-panel';
+import { HeroPanel } from '../../../panels/elements/hero-panel/hero-panel';
 import { Kit } from '../../../../models/kit';
 import { Options } from '../../../../models/options';
 import { PanelMode } from '../../../../enums/panel-mode';
+import { Sourcebook } from '../../../../models/sourcebook';
 import { Toggle } from '../../../controls/toggle/toggle';
+import { useMemo } from 'react';
+import { useParams } from 'react-router';
 
 import './hero-view-page.scss';
 
 interface Props {
-	hero: Hero;
-	campaignSettings: CampaignSetting[];
+	heroes: Hero[];
+	sourcebooks: Sourcebook[];
 	options: Options;
 	setOptions: (options: Options) => void;
 	goHome: () => void;
 	showAbout: () => void;
 	closeHero: () => void;
-	editHero: () => void;
-	exportHero: (format: 'image' | 'pdf' | 'json') => void;
-	deleteHero: () => void;
+	editHero: (heroId: string) => void;
+	exportHero: (heroId: string, format: 'image' | 'pdf' | 'json') => void;
+	deleteHero: (heroId: string) => void;
 	onSelectAncestry: (ancestry: Ancestry) => void;
 	onSelectCulture: (culture: Culture) => void;
 	onSelectCareer: (career: Career) => void;
@@ -40,11 +43,16 @@ interface Props {
 	onSelectKit: (kit: Kit) => void;
 	onSelectCharacteristic: (characteristic: Characteristic, hero: Hero) => void;
 	onSelectAbility: (ability: Ability, hero: Hero) => void;
-	onShowHeroState: (page: 'hero' | 'stats' | 'conditions') => void;
-	onShowRules: () => void;
+	onShowHeroState: (hero: Hero, page: 'hero' | 'stats' | 'conditions') => void;
+	onShowRules: (hero: Hero) => void;
 }
 
+const getHero = (heroId: string, heroes: Hero[]) => heroes.find(h => h.id === heroId)!;
+
 export const HeroPage = (props: Props) => {
+	const { heroId } = useParams<{ heroId: string }>();
+	const hero = useMemo(() => getHero(heroId!, props.heroes), [ heroId, props.heroes ]);
+
 	try {
 		const setShowSkillsInGroups = (value: boolean) => {
 			const copy = JSON.parse(JSON.stringify(props.options)) as Options;
@@ -72,14 +80,14 @@ export const HeroPage = (props: Props) => {
 
 		return (
 			<div className='hero-view-page'>
-				<AppHeader goHome={props.goHome} showAbout={props.showAbout}>
+				<AppHeader subtitle='Heroes' goHome={props.goHome} showAbout={props.showAbout}>
 					<Button onClick={props.closeHero}>
 						Close
 					</Button>
-					<Button onClick={() => props.onShowHeroState('hero')}>
+					<Button onClick={() => props.onShowHeroState(hero, 'hero')}>
 						State
 					</Button>
-					<Button onClick={props.onShowRules}>
+					<Button onClick={() => props.onShowRules(hero)}>
 						Rules
 					</Button>
 					<Popover
@@ -108,21 +116,10 @@ export const HeroPage = (props: Props) => {
 											label: <div className='ds-text centered-text'>Export As Data</div>
 										}
 									]}
-									onClick={key => props.exportHero(key as 'image' | 'pdf' | 'json')}
+									onClick={key => props.exportHero(heroId!, key as 'image' | 'pdf' | 'json')}
 								/>
-								<Button icon={<EditOutlined />} onClick={props.editHero}>Edit</Button>
-								<Popover
-									trigger='click'
-									placement='bottom'
-									content={(
-										<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-											<div>This can't be undone; are you sure?</div>
-											<Button danger={true} onClick={props.deleteHero}>Delete</Button>
-										</div>
-									)}
-								>
-									<Button icon={<DeleteOutlined />}>Delete</Button>
-								</Popover>
+								<Button icon={<EditOutlined />} onClick={() => (props).editHero(heroId!)}>Edit</Button>
+								<DangerButton onConfirm={() => props.deleteHero(heroId!)} />
 							</div>
 						)}
 					>
@@ -134,8 +131,8 @@ export const HeroPage = (props: Props) => {
 				</AppHeader>
 				<div className='hero-view-page-content'>
 					<HeroPanel
-						hero={props.hero}
-						campaignSettings={props.campaignSettings}
+						hero={hero}
+						sourcebooks={props.sourcebooks}
 						options={props.options}
 						mode={PanelMode.Full}
 						onSelectAncestry={props.onSelectAncestry}
@@ -145,9 +142,9 @@ export const HeroPage = (props: Props) => {
 						onSelectComplication={props.onSelectComplication}
 						onSelectDomain={props.onSelectDomain}
 						onSelectKit={props.onSelectKit}
-						onSelectCharacteristic={characteristic => props.onSelectCharacteristic(characteristic, props.hero)}
-						onSelectAbility={ability => props.onSelectAbility(ability, props.hero)}
-						onShowState={props.onShowHeroState}
+						onSelectCharacteristic={characteristic => props.onSelectCharacteristic(characteristic, hero)}
+						onSelectAbility={ability => props.onSelectAbility(ability, hero)}
+						onShowState={page => props.onShowHeroState(hero, page)}
 					/>
 				</div>
 			</div>

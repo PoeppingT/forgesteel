@@ -1,7 +1,7 @@
 export enum FeatureType {
 	Text = 'Text',
 	Ability = 'Ability',
-	AbilityCost = 'Abiliyy Cost',
+	AbilityCost = 'Ability Cost',
 	Bonus = 'Bonus',
 	Choice = 'Choice',
 	ClassAbility = 'Class Ability',
@@ -11,8 +11,13 @@ export enum FeatureType {
 	Kit = 'Kit',
 	KitType = 'Kit Type',
 	Language = 'Language',
+	LanguageChoice = 'Language Choice',
+	Malice = 'Malice',
 	Multiple = 'Multiple Features',
+	Perk = 'Perk',
 	Size = 'Size',
 	Skill = 'Skill',
-	SkillChoice = 'Skill Choice'
+	SkillChoice = 'Skill Choice',
+	Speed = 'Speed',
+	Title = 'Title'
 }

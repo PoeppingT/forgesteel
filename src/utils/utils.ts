@@ -65,6 +65,10 @@ export class Utils {
 			.map(id => document.getElementById(id))
 			.filter(element => !!element);
 
+		if (elements.length === 0) {
+			return;
+		}
+
 		const originalBackgroundColors: { [id: string]: string; } = {};
 		elements.forEach(element => {
 			originalBackgroundColors[element.id] = element.style.backgroundColor;
@@ -97,7 +101,7 @@ export class Utils {
 		const blob = new Blob([ json ], { type: 'application/json' });
 
 		const a = document.createElement('a');
-		a.download = `${name}.drawsteel.${type}`;
+		a.download = `${name}.drawsteel-${type}`;
 		a.href = window.URL.createObjectURL(blob);
 		a.click();
 	};

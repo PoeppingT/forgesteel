@@ -1,16 +1,16 @@
 import { Button, Upload } from 'antd';
 import { DownloadOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { AppHeader } from '../../../panels/app-header/app-header';
-import { CampaignSetting } from '../../../../models/campaign-setting';
 import { Hero } from '../../../../models/hero';
-import { HeroPanel } from '../../../panels/hero-panel/hero-panel';
+import { HeroPanel } from '../../../panels/elements/hero-panel/hero-panel';
 import { SelectablePanel } from '../../../controls/selectable-panel/selectable-panel';
+import { Sourcebook } from '../../../../models/sourcebook';
 
 import './hero-list-page.scss';
 
 interface Props {
 	heroes: Hero[];
-	campaignSettings: CampaignSetting[];
+	sourcebooks: Sourcebook[];
 	goHome: () => void;
 	showAbout: () => void;
 	addHero: () => void;
@@ -22,7 +22,7 @@ export const HeroListPage = (props: Props) => {
 	try {
 		return (
 			<div className='hero-list-page'>
-				<AppHeader goHome={props.goHome} showAbout={props.showAbout}>
+				<AppHeader subtitle='Heroes' goHome={props.goHome} showAbout={props.showAbout}>
 					<Button type='primary' icon={<PlusCircleOutlined />} onClick={props.addHero}>
 						Create A New Hero
 					</Button>
@@ -47,7 +47,7 @@ export const HeroListPage = (props: Props) => {
 					{
 						props.heroes.map(hero => (
 							<SelectablePanel key={hero.id} onSelect={() => props.viewHero(hero.id)}>
-								<HeroPanel hero={hero} campaignSettings={props.campaignSettings} />
+								<HeroPanel hero={hero} sourcebooks={props.sourcebooks} />
 							</SelectablePanel>
 						))
 					}
